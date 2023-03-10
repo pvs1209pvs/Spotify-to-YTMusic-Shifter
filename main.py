@@ -68,6 +68,7 @@ def is_liked(web_driver: WebDriver):
     try:
         liked_text = WebDriverWait(web_driver, 10).until(ec.visibility_of_element_located((By.XPATH,
                                                                                            "/html/body/ytmusic-app/ytmusic-popup-container/tp-yt-iron-dropdown/div/ytmusic-menu-popup-renderer/tp-yt-paper-listbox/ytmusic-toggle-menu-service-item-renderer[2]/yt-formatted-string")))
+
         return liked_text.text == "Remove from liked songs"
     except selenium.common.exceptions.TimeoutException:
         return False
@@ -99,12 +100,10 @@ def add_to_ytm(song_to_save: str):
 
     # Setup ChromeDriver
     chrome_opts = Options()
-    chrome_opts.add_experimental_option("debuggerAddress", "localhost:"+str(REMOTE_DEBUGGING_PORT))
+    chrome_opts.add_experimental_option("debuggerAddress", "localhost:" + str(REMOTE_DEBUGGING_PORT))
     chrome = webdriver.Chrome(executable_path=CHROME_DRIVER_PATH, options=chrome_opts)
-
     # Open YTM
     chrome.get("https://music.youtube.com//")
-    print(chrome.port)
 
     # Click Search
     search = WebDriverWait(chrome, 10).until(ec.visibility_of_element_located((By.XPATH,
@@ -140,10 +139,12 @@ def add_to_ytm(song_to_save: str):
         if song_element is None:
             return song_to_save
         else:
+
             ActionChains(chrome).context_click(song_element).perform()
-            song = WebDriverWait(chrome, 10).until(ec.visibility_of_element_located((By.XPATH, "/html/body/ytmusic-app/ytmusic-popup-container/tp-yt-iron-dropdown/div/ytmusic-menu-popup-renderer/tp-yt-paper-listbox/ytmusic-toggle-menu-service-item-renderer")))
+            song = WebDriverWait(chrome, 10).until(ec.visibility_of_element_located((By.XPATH, "/html/body/ytmusic-app/ytmusic-popup-container/tp-yt-iron-dropdown/div/ytmusic-menu-popup-renderer/tp-yt-paper-listbox/ytmusic-toggle-menu-service-item-renderer[2]")))
             song.click()
             return ""
+
 
     return ""
 
@@ -168,13 +169,12 @@ if __name__ == "__main__":
 
     load_creds("creds.txt")
     print(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, REMOTE_DEBUGGING_PORT, CHROME_DRIVER_PATH)
-    # add_to_ytm("die 4 me halsey")
-    # exit(100)
-
 
     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIPY_CLIENT_ID,
                                                    client_secret=SPOTIPY_CLIENT_SECRET,
                                                    redirect_uri=REDIRECT_URL,
                                                    scope=SCOPE))
+
+
 
     move_spotify_to_ytm(sp)
