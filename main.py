@@ -11,12 +11,12 @@ from selenium.webdriver.common.by import By
 from spotipy.oauth2 import SpotifyOAuth
 import spotipy
 
-SPOTIPY_CLIENT_ID = "73f8e3c4592e46fea5f90060af15c5ac"
-SPOTIPY_CLIENT_SECRET = "4d612b4dcc5e429da3be37e6775f5a0e"
+SPOTIPY_CLIENT_ID = ""
+SPOTIPY_CLIENT_SECRET = ""
 REDIRECT_URL = "http://localhost:8080"
 SCOPE = "user-library-read"
-REMOTE_DEBUGGING_PORT = 9222
-CHROME_DRIVER_PATH = "/usr/local/bin/chromedriver"
+REMOTE_DEBUGGING_PORT = 0
+CHROME_DRIVER_PATH = ""
 
 
 def load_creds(filename: str):
@@ -79,26 +79,27 @@ def is_top_res_song(web_driver:WebDriver):
     return is_song.text == "Song"
 
 
-def look_elsewhere(web_driver):
+def search_songs_sec(web_driver):
     """
-    if the top result isn't a song ie album or something else.
-    :param web_driver:
-    :return:
+    Returns the element if the result is of type 'Song' else None.
+    :param web_driver: WebDriver.
+    :return: Element itself if True else None.
     """
     type = WebDriverWait(web_driver, 10).until(ec.visibility_of_element_located((By.XPATH,"/html/body/ytmusic-app/ytmusic-app-layout/div[3]/ytmusic-search-page/ytmusic-tabbed-search-results-renderer/div[2]/ytmusic-section-list-renderer/div[2]/ytmusic-shelf-renderer[2]/div[3]/ytmusic-responsive-list-item-renderer[1]/div[2]/div[3]/yt-formatted-string/span[1]")))
-    if type.text == "Song":
-        return type
-    else:
-        return None
-    # return type.text == "Song"
-        # song_maybe = WebDriverWait(web_driver, 10).until(ec.visibility_of_element_located((By.XPATH,
-        #                                                                              "/html/body/ytmusic-app/ytmusic-app-layout/div[3]/ytmusic-search-page/ytmusic-tabbed-search-results-renderer/div[2]/ytmusic-section-list-renderer/div[2]/ytmusic-shelf-renderer[2]/div[3]/ytmusic-responsive-list-item-renderer[1]")))
+
+    return type if type.text == "Song" else None
 
 
 def add_to_ytm(song_to_save: str):
+    """
+    Adds the song to YTMusic
+    :param song_to_save: Song to add to YTMusic.
+    :return: Empty-string is the song was successful added else the name of the song.
+    """
+
     # Setup ChromeDriver
     chrome_opts = Options()
-    chrome_opts.add_experimental_option("debuggerAddress", "localhost:8989")
+    chrome_opts.add_experimental_option("debuggerAddress", "localhost:"+str(REMOTE_DEBUGGING_PORT))
     chrome = webdriver.Chrome(executable_path=CHROME_DRIVER_PATH, options=chrome_opts)
 
     # Open YTM
@@ -121,6 +122,7 @@ def add_to_ytm(song_to_save: str):
         top_res = WebDriverWait(chrome, 10).until(ec.visibility_of_element_located((By.XPATH,
                                                                                 "/html/body/ytmusic-app/ytmusic-app-layout/div[3]/ytmusic-search-page/ytmusic-tabbed-search-results-renderer/div[2]/ytmusic-section-list-renderer/div[2]/ytmusic-shelf-renderer[1]/div[3]")))
 
+        # Performs right-click
         ActionChains(chrome).context_click(top_res).perform()
 
         # Add song (from right-click menu)
@@ -133,25 +135,26 @@ def add_to_ytm(song_to_save: str):
             except selenium.common.exceptions.TimeoutException:
                 return song_to_save
     else:
-        something = look_elsewhere(chrome)
+        song_element = search_songs_sec(chrome)
 
-        if something is None:
+        if song_element is None:
             return song_to_save
         else:
-            ActionChains(chrome).context_click(something).perform()
-            other = WebDriverWait(chrome, 10).until(ec.visibility_of_element_located((By.XPATH, "/html/body/ytmusic-app/ytmusic-popup-container/tp-yt-iron-dropdown/div/ytmusic-menu-popup-renderer/tp-yt-paper-listbox/ytmusic-toggle-menu-service-item-renderer")))
-            other.click()
-            return "nice"
+            ActionChains(chrome).context_click(song_element).perform()
+            song = WebDriverWait(chrome, 10).until(ec.visibility_of_element_located((By.XPATH, "/html/body/ytmusic-app/ytmusic-popup-container/tp-yt-iron-dropdown/div/ytmusic-menu-popup-renderer/tp-yt-paper-listbox/ytmusic-toggle-menu-service-item-renderer")))
+            song.click()
+            return ""
 
     return ""
 
 
 def move_spotify_to_ytm(spotify):
     all_spotify_songs = get_all_liked_songs(spotify, 50)
+    all_spotify_songs = ['Die 4 Me - Halsey', 'Saints Row - Main Theme - Malcolm Kirby Jr.', 'Play Me Like A Violin - Stephen', 'Bitch Lasagna - pewdiepie', 'What Lovers Do (feat. SZA) - Maroon 5', 'Backwards Directions - Abby Sage', 'Chand Sifarish - Jatin-Lalit', 'Baarish Ki Jaaye - B Praak', 'London Lahore - Dilbag Singh', '2019 FLOW - Sikander Kahlon', 'The Way I Are (Dance with Somebody) [feat. Lil Wayne] - Bebe Rexha', 'Aston Martin Truck - Roddy Ricch', 'Pasoori - Shae Gill', 'Summer High - AP Dhillon', 'Rabba Ve (From "High End Yaariyaan") - B Praak', 'Breaking Through - The Wreckage', 'Lonely Road - WILLOW', 'Meri Jaan Meri Jaan (From "Bachchhan Paandey") - B Praak', 'NA NA NA - Osekhon', 'Desi Kalakaar - Yo Yo Honey Singh', 'Taare - Diljit Dosanjh', 'Sajna - Yashal Shahid', 'Humble - Tarsem Jassar', 'No Count - Tarsem Jassar', 'Guts - Tarsem Jassar', 'My Pride - Tarsem Jassar', 'Never Really Loved Me (with Dean Lewis) - Kygo', 'Wild Imagination - Rare Americans', 'Perfectly Imperfect - MOD SUN', 'pretty toxic revolver - Machine Gun Kelly', 'I Love U - The Chainsmokers', 'Cold Heart - PNAU Remix - Elton John', 'West Coast - OneRepublic', 'Eyes Don’t Lie - Tones And I', 'Synchronize - Milky Chance', "Can't Stop Us Now - Pitbull", 'Rumors - NEFFEX', 'G.O.A.T. - Diljit Dosanjh', 'Unforgettable - Diljit Dosanjh', 'Sai - Satinder Sartaaj', 'Offshore - Shubh', 'Dil Na Jaaneya Remix by DJ Chetas & DJ Lijo - Dj Chetas', 'Gallan Mithiyan - Mankirt Aulakh', 'Savan - Vilen', 'Eternity - NexP', 'Hear You Calling - Kid Mac', 'Lucid Dreams - Juice WRLD', 'Already Dead - Juice WRLD', 'Bad Boy (with Young Thug) - Juice WRLD', 'Reminds Me Of You - Juice WRLD', 'el Diablo - Machine Gun Kelly', 'Wants And Needs - Instrumental - Diamond Audio', 'Worth It (feat. Kid Ink) - Fifth Harmony', 'Love Language - Acoustic - Connor Price', 'Choothi - Waqar Ex', 'Left - Jordan Solomon', 'Nira Ishq - Guri', 'Taara - Ammy Virk', 'SUBEME LA RADIO (feat. Descemer Bueno & Zion & Lennox) - Enrique Iglesias', 'BITE ME - NEFFEX', 'Uchiyaan Dewaraan - Bilal Saeed', 'Time Lapse - Ludovico Einaudi', 'Main Suneya - Ammy Virk', 'MISS THE RAGE - XAE.Miami', 'Brown Boy - NAV', 'Goosebumps - Remix - Travis Scott', 'This Feeling - The Chainsmokers', 'Freshman List - NAV', 'Never Give Up - NEFFEX', "I'm So Paid - Akon", 'Playing Through the Pain - I Am King', 'Love the Way You Lie, Pt. 2 - I Am King', 'Higher (feat. iann dior) - Clean Bandit', 'Malibu - Virginia To Vegas', 'Lifestyle (feat. Adam Levine) - Jason Derulo', 'Juice - Future', 'Yaarr Ni Milyaa - Harrdy Sandhu', 'Minute - NAV', 'My Mind - NAV', 'Best of Me - NEFFEX', 'Cheerleader - Felix Jaehn Remix Radio Edit - OMI', 'Watch Me (Whip / Nae Nae) - Silentó', 'The Adventures of Moon Man & Slim Shady (with Eminem) - Kid Cudi', 'I Like Me Better - Lauv', 'no song without you - HONNE', 'Immortal - Dream Evil', 'Professional Rapper (feat. Snoop Dogg) - Lil Dicky', 'Spartan - NEFFEX', 'Make It - NEFFEX', 'Stay (with Alessia Cara) - Zedd', 'Nowhere Fast (feat. Kehlani) - Extended Version - Eminem', 'Body - Dzeko Remix - Loud Luxury', 'In Your Head - Eminem', 'Freestyle Rap Leader - Skar-p', 'Meray Saathiya - Roxen', 'Rubbin off the Paint - YBN Nahmir', "No Flockin' - Kodak Black", 'Save Me - Promoting Sounds', 'Lose Somebody - Kygo', 'Intentions (feat. Quavo) - Justin Bieber', 'Eastside (with Halsey & Khalid) - benny blanco', 'Ek Raat - Vilen', 'The Hunter - Adam Jensen', 'Pendu (feat. Young Fateh) - Dr Zeus', 'me & ur ghost - blackbear', 'Stupid Love - Lady Gaga', 'Despacito - Luis Fonsi', 'Antisocial (with Travis Scott) - Ed Sheeran', 'All Mirrors - Angel Olsen', 'Bubbly - Roy Woods', 'Supply - Gurjas Sidhu', 'Magnolia - Playboi Carti', 'Million Reasons - Lady Gaga', "Now's My Time (Nba 2k12 Theme) [feat. Elizabeth Elidades] - D.J.I.G. & Alex Kresovich", 'Cold - NEFFEX', 'Best of Me - NEFFEX', 'Destiny - NEFFEX', 'Renegades - Feeder', 'This Town - Niall Horan', 'Believe - Eminem', '1-800-273-8255 - Logic', 'dirty laundry - blackbear', 'Hate Me (with Juice WRLD) - Ellie Goulding', 'Careless - NEFFEX', 'Sandstorm - Darude', 'Bump & Grind (Bassline Riddim) - Vato Gonzalez', 'Mariah - NAV', '23 - Mike WiLL Made-It', 'Mercy - Shawn Mendes', "Can't Let Go. - B L N D K N G S", 'You Know - NAV', 'Lose Yourself - From "8 Mile" Soundtrack - Eminem', 'Here With Me - Marshmello', 'Natural - Imagine Dragons', "You Can't Stop Me - Andy Mineo", 'Changed My Mind - Tove Styrke', 'Play Me Like a Violin - Stephen', 'I Know - Jocelyn Alice', '1-800-273-8255 - Logic', 'Scared to Be Lonely - Martin Garrix', 'Friends (with BloodPop®) - Justin Bieber', 'iSpy - KYLE', 'Rapper - Jaden', 'Rap Saved Me (feat. Quavo) - 21 Savage', 'Sick Boy - The Chainsmokers', 'Kill The Lights - The Glorious Sons', 'Wanted You (feat. Lil Uzi Vert) - NAV', 'Morning After - dvsn', 'Flashlight - Original Mix - R3HAB', 'After the Party - The Menzingers', 'TEAM - Magic & Bird', "Maybe You're Right - Miley Cyrus", 'Thought It Was a Drought - Future', 'American Idiot - Green Day', 'Back to You (feat. Bebe Rexha & Digital Farm Animals) - Louis Tomlinson', 'Feel So Close - Radio Edit - Calvin Harris', 'High Without Your Love - Loote', 'Kings And Queens Of Summer - Matstubs', 'One More Light - Linkin Park', 'No Vacancy - OneRepublic', 'Tired - Kygo Remix - Alan Walker', 'Despacito - Remix - Luis Fonsi', 'Disrespectful - GASHI']
 
     missing_songs = []
 
-    for spoty_song in all_spotify_songs[:5]:
+    for spoty_song in all_spotify_songs:
         result = add_to_ytm(spoty_song)
 
         if result != "":
@@ -163,10 +166,10 @@ def move_spotify_to_ytm(spotify):
 
 if __name__ == "__main__":
 
-    # load_creds("creds.txt")
-    # print(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, REMOTE_DEBUGGING_PORT, CHROME_DRIVER_PATH)
-    add_to_ytm("die 4 me halsey")
-    exit(100)
+    load_creds("creds.txt")
+    print(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, REMOTE_DEBUGGING_PORT, CHROME_DRIVER_PATH)
+    # add_to_ytm("die 4 me halsey")
+    # exit(100)
 
 
     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIPY_CLIENT_ID,
